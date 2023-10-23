@@ -1,6 +1,6 @@
 package bril
 
-import bril.analysis._
+import bril.analysis
 import bril.syntax._
 import cats.syntax.all._
 
@@ -33,10 +33,16 @@ object Main extends App {
         None,
         List(
           Label("start"),
+          Const(Destination("overwritten", BrilInt), IntLit(0)),
           Const(Destination("five", BrilInt), IntLit(5)),
-          Const(Destination("ten", BrilInt), IntLit(10)),
+          Unary(Destination("overwritten", BrilInt), Id, "five"),
+          Const(Destination("ten", BrilInt), IntLit(5)),
+          Binary(Destination("ten", BrilInt), Add, "ten", "five"),
+          Unary(Destination("overwritten", BrilInt), Id, "ten"),
           Binary(Destination("res", BrilInt), Add, "arg", "five"),
+          Binary(Destination("overwritten", BrilInt), Add, "res", "res"),
           Binary(Destination("cond", BrilBool), Le, "res", "ten"),
+          Binary(Destination("overwritten", BrilInt), Add, "res", "five"),
           Br("cond", "then", "else"),
           Const(Destination("dead", BrilInt), IntLit(0)),
           Label("then"),
@@ -52,5 +58,10 @@ object Main extends App {
   println(program2.show)
   println()
   println("CFG:")
-  println(Cfg.fromInstructions("main", program2.functions(0).instrs).show)
+  val cfg = analysis.Cfg.fromInstructions("main", program2.functions(0).instrs)
+  println(cfg.show)
+  println()
+  println("After local dead code elimination:")
+  val blocksEliminated = analysis.local.DeadCodeElimination.run(cfg.basicBlocks)
+  println(cfg.copy(basicBlocks = blocksEliminated).show)
 }

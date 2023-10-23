@@ -39,4 +39,22 @@ object Instruction {
       case Nop         => "nop"
     }
   }
+
+  def dest(instr: Instruction): Option[Destination] = instr match {
+    case Const(dest, _)        => Some(dest)
+    case Binary(dest, _, _, _) => Some(dest)
+    case Unary(dest, _, _)     => Some(dest)
+    case Call(optDest, _, _)   => optDest
+    case _                     => None
+  }
+
+  def args(instr: Instruction): List[String] = instr match {
+    case Binary(_, _, argLeft, argRight) => List(argLeft, argRight)
+    case Unary(_, _, arg)                => List(arg)
+    case Br(arg, _, _)                   => List(arg)
+    case Call(_, _, args)                => args
+    case Ret(optArg)                     => optArg.toList
+    case Print(args)                     => args
+    case _                               => Nil
+  }
 }
