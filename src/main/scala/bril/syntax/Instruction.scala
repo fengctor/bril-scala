@@ -11,7 +11,7 @@ final case class Unary(dest: Destination, op: UnaryOperation, arg: String) exten
 final case class Jmp(label: String) extends Instruction
 final case class Br(arg: String, label1: String, label2: String) extends Instruction
 final case class Call(optDest: Option[Destination], name: String, args: List[String]) extends Instruction
-final case class Ret(arg: Option[String]) extends Instruction
+final case class Ret(optArg: Option[String]) extends Instruction
 final case class Print(args: List[String]) extends Instruction
 final case object Nop extends Instruction
 
@@ -30,8 +30,12 @@ object Instruction {
           case None       => rhsStr
           case Some(dest) => s"${dest.show} = $rhsStr"
         }
-      case Ret(arg)    => s"print $arg"
-      case Print(args) => s"ret ${args.mkString(" ")}"
+      case Ret(optArg) =>
+        optArg match {
+          case None      => "ret"
+          case Some(arg) => s"ret $arg"
+        }
+      case Print(args) => s"print ${args.mkString(" ")}"
       case Nop         => "nop"
     }
   }
