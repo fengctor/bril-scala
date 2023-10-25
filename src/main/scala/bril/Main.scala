@@ -92,7 +92,7 @@ object Main extends App {
     )
   )
 
-  val program = lvnProgram
+  val program = copyPropProgram
   println("Program:")
   println(program.show)
   println()
@@ -114,7 +114,6 @@ object Main extends App {
   val lvnCfg = cfg.copy(basicBlocks = blocksNumbered)
   println(lvnCfg.show)
   println()
-  /*
   println("After copy propagation:")
   val blocksCopyPropagated = cfg.basicBlocks.map { case (blockName, instrs) =>
     (
@@ -125,5 +124,4 @@ object Main extends App {
   val copyPropCfg = cfg.copy(basicBlocks = blocksCopyPropagated)
   println(copyPropCfg.show)
   println()
-  */
 }

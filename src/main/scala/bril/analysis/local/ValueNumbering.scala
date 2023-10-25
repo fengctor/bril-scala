@@ -14,7 +14,8 @@ final case class UnExpr(op: UnaryOperation, arg: Int) extends SerializedExpressi
 case class Table(
   idToExpr: Map[Int, SerializedExpression],
   idToCanonVar: Map[Int, String],
-  exprToId: Map[SerializedExpression, Int]
+  exprToId: Map[SerializedExpression, Int],
+  canonVarToId: Map[String, Int]
 )
 
 object ValueNumbering {
@@ -45,7 +46,12 @@ object ValueNumbering {
     }
 
   def addRow(table: Table, id: Int, serExpr: SerializedExpression, canonVar: String): Table =
-    Table(table.idToExpr + (id -> serExpr), table.idToCanonVar + (id -> canonVar), table.exprToId + (serExpr -> id))
+    Table(
+      table.idToExpr + (id -> serExpr),
+      table.idToCanonVar + (id -> canonVar),
+      table.exprToId + (serExpr -> id),
+      table.canonVarToId + (canonVar -> id)
+    )
 
   // ext: a set of functions to interpret a serialized expression as another one for creating other optimizations
   def runWithExtension(ext: Extension)(block: List[Instruction]): List[Instruction] = {
@@ -126,7 +132,7 @@ object ValueNumbering {
 
     // Reset IDs for each block
     curId = 0
-    numberValues(block, Table(Map.empty, Map.empty, Map.empty), Map.empty, Nil)
+    numberValues(block, Table(Map.empty, Map.empty, Map.empty, Map.empty), Map.empty, Nil)
   }
 
   // Identity extension
