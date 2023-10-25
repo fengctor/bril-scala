@@ -101,13 +101,13 @@ object ValueNumbering {
         val (nextTable, nextVarToId, resultInstr) = serialize(instr, initVarToId) match {
           case None =>
             // Remap args to their canonical variables
-            val remappedInstr = Instruction.mapArgs(instr)(arg => initTable.idToCanonVar(varToId(arg)))
+            val remappedInstr = Instruction.mapArgs(instr)(arg => initTable.idToCanonVar(initVarToId(arg)))
             (initTable, initVarToId, remappedInstr)
           case Some((dest, serExpr)) =>
-            val preLookupSerExpr = ext.preLookup(serExpr, table)
+            val preLookupSerExpr = ext.preLookup(serExpr, initTable)
             initTable.exprToId.get(preLookupSerExpr) match {
               case None =>
-                val postLookupSerExpr = ext.postLookup(preLookupSerExpr, table)
+                val postLookupSerExpr = ext.postLookup(preLookupSerExpr, initTable)
                 // If instruction is overwritten later, use a fresh variable as the canonical var
                 // and when then instruction is reconstructed, use it as the destination variable
                 val canonDestName =
@@ -122,11 +122,11 @@ object ValueNumbering {
                 (updatedTable, updatedVarToId, deserialize(updatedDest, postLookupSerExpr, updatedTable.idToCanonVar))
               case Some(existingId) =>
                 val updatedVarToId = initVarToId + (dest.destName -> existingId)
-                val postLookupSerExpr = ext.postLookup(UnExpr(Id, existingId), table)
+                val postLookupSerExpr = ext.postLookup(UnExpr(Id, existingId), initTable)
                 (initTable, updatedVarToId, deserialize(dest, postLookupSerExpr, initTable.idToCanonVar))
             }
         }
-        val convertedInstr = Instruction.mapArgs(resultInstr)(arg => ext.argConversion(arg, table))
+        val convertedInstr = Instruction.mapArgs(resultInstr)(arg => ext.argConversion(arg, nextTable))
         numberValues(instrs, nextTable, nextVarToId, convertedInstr :: accRevResult)
     }
 

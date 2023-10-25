@@ -92,7 +92,28 @@ object Main extends App {
     )
   )
 
-  val program = copyPropProgram
+  val cseProgram = Program(
+    List(
+      Function(
+        "main",
+        List(),
+        None,
+        List(
+          Const(Destination("a", BrilInt), IntLit(4)),
+          Const(Destination("b", BrilInt), IntLit(2)),
+          Binary(Destination("sum1", BrilInt), Add, "a", "b"),
+          Binary(Destination("sum2", BrilInt), Add, "b", "a"),
+          Binary(Destination("prod", BrilInt), Mul, "sum1", "sum2"),
+          Print(List("a")),
+          Binary(Destination("a", BrilInt), Mul, "sum1", "sum2"),
+          Print(List("prod"))
+        )
+      )
+    )
+  )
+
+
+  val program = cseProgram
   println("Program:")
   println(program.show)
   println()
@@ -123,6 +144,12 @@ object Main extends App {
     "copy propagation",
     analysis.local.ValueNumbering.runWithExtension(
       analysis.local.extensions.CopyPropagation.extension
+    )
+  )
+  testLocalOptimization(
+    "common subexpression elimination",
+    analysis.local.ValueNumbering.runWithExtension(
+      analysis.local.extensions.CommonSubexpressionElimination.extension
     )
   )
   testLocalOptimization(
