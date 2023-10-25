@@ -100,28 +100,35 @@ object Main extends App {
   val cfg = analysis.Cfg.fromInstructions("main", program.functions(0).instrs)
   println(cfg.show)
   println()
-  println("After local dead code elimination:")
-  val blocksEliminated = cfg.basicBlocks.map { case (blockName, instrs) =>
-    (blockName, analysis.local.DeadCodeElimination.run(instrs))
+
+  def testLocalOptimization(name: String, optimization: List[Instruction] => List[Instruction]): Unit = {
+    println(s"After $name:")
+    var resultBlocks = cfg.basicBlocks.map { case (blockName, instrs) => (blockName, optimization(instrs)) }
+    val resultCfg = cfg.copy(basicBlocks = resultBlocks)
+    println(resultCfg.show)
+    println()
   }
-  val dceCfg = cfg.copy(basicBlocks = blocksEliminated)
-  println(dceCfg.show)
-  println()
-  println("After local value numbering:")
-  val blocksNumbered = cfg.basicBlocks.map { case (blockName, instrs) =>
-    (blockName, analysis.local.ValueNumbering.runWithExtension(analysis.local.ValueNumbering.extension)(instrs))
-  }
-  val lvnCfg = cfg.copy(basicBlocks = blocksNumbered)
-  println(lvnCfg.show)
-  println()
-  println("After copy propagation:")
-  val blocksCopyPropagated = cfg.basicBlocks.map { case (blockName, instrs) =>
-    (
-      blockName,
-      analysis.local.ValueNumbering.runWithExtension(analysis.local.extensions.CopyPropagation.extension)(instrs)
+
+  testLocalOptimization(
+    "dead code elimination",
+    analysis.local.DeadCodeElimination.run
+  )
+  testLocalOptimization(
+    "local value numbering",
+    analysis.local.ValueNumbering.runWithExtension(
+      analysis.local.ValueNumbering.extension
     )
-  }
-  val copyPropCfg = cfg.copy(basicBlocks = blocksCopyPropagated)
-  println(copyPropCfg.show)
-  println()
+  )
+  testLocalOptimization(
+    "copy propagation",
+    analysis.local.ValueNumbering.runWithExtension(
+      analysis.local.extensions.CopyPropagation.extension
+    )
+  )
+  testLocalOptimization(
+    "constant propagation",
+    analysis.local.ValueNumbering.runWithExtension(
+      analysis.local.extensions.ConstantPropagation.extension
+    )
+  )
 }
