@@ -158,4 +158,10 @@ object Main extends App {
       analysis.local.extensions.ConstantPropagation.extension
     )
   )
+  testLocalOptimization(
+    "constant folding",
+    analysis.local.ValueNumbering.runWithExtension(
+      analysis.local.extensions.ConstantFolding.extension
+    )
+  )
 }
