@@ -1,11 +1,10 @@
 package bril.analysis.local
 
 import bril.syntax._
-import cats.Functor
 import cats.syntax.all._
 
 object DeadCodeElimination {
-  private def elimInBlock(block: List[Instruction]): List[Instruction] = {
+  def run(block: List[Instruction]): List[Instruction] = {
     // i: index of current instruction
     // lastDef: (arg -> index of last seen unused definition)
     // returns a set of indices of instructions in the block to remove
@@ -37,7 +36,4 @@ object DeadCodeElimination {
       case (instr, i) if !indicesToRemove.contains(i) => instr
     }
   }
-  def run(basicBlocks: Map[String, List[Instruction]]): Map[String, List[Instruction]] =
-    // Functor[Map[String, ?]].map(basicBlocks)(elimInBlock(_))
-    basicBlocks.map { case (k, v) => (k, elimInBlock(v)) }
 }

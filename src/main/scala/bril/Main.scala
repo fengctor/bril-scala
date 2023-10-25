@@ -42,7 +42,7 @@ object Main extends App {
           Binary(Destination("res", BrilInt), Add, "arg", "five"),
           Binary(Destination("overwritten", BrilInt), Add, "res", "res"),
           Binary(Destination("cond", BrilBool), Le, "res", "ten"),
-          Binary(Destination("overwritten", BrilInt), Add, "res", "five"),
+          Binary(Destination("overwritten", BrilInt), Add, "arg", "five"),
           Br("cond", "then", "else"),
           Const(Destination("dead", BrilInt), IntLit(0)),
           Label("then"),
@@ -54,14 +54,45 @@ object Main extends App {
       )
     )
   )
+
+  val program3 = Program(
+    List(
+      Function(
+        "main",
+        List(),
+        None,
+        List(
+          Const(Destination("a", BrilInt), IntLit(4)),
+          Const(Destination("b", BrilInt), IntLit(2)),
+          Binary(Destination("sum1", BrilInt), Add, "a", "b"),
+          Binary(Destination("sum2", BrilInt), Add, "a", "b"),
+          Binary(Destination("prod", BrilInt), Mul, "sum1", "sum2"),
+          Binary(Destination("a", BrilInt), Mul, "sum1", "sum2"),
+          Print(List("prod"))
+        )
+      )
+    )
+  )
+
+  val program = program3
   println("Program:")
-  println(program2.show)
+  println(program.show)
   println()
   println("CFG:")
-  val cfg = analysis.Cfg.fromInstructions("main", program2.functions(0).instrs)
+  val cfg = analysis.Cfg.fromInstructions("main", program.functions(0).instrs)
   println(cfg.show)
   println()
   println("After local dead code elimination:")
-  val blocksEliminated = analysis.local.DeadCodeElimination.run(cfg.basicBlocks)
-  println(cfg.copy(basicBlocks = blocksEliminated).show)
+  val blocksEliminated = cfg.basicBlocks.map { case (blockName, instrs) =>
+    (blockName, analysis.local.DeadCodeElimination.run(instrs))
+  }
+  val dceCfg = cfg.copy(basicBlocks = blocksEliminated)
+  println(dceCfg.show)
+  println()
+  println("After local value numbering:")
+  val blocksNumbered = dceCfg.basicBlocks.map { case (blockName, instrs) =>
+    (blockName, analysis.local.ValueNumbering.runWithExtension((expr, _) => expr)(instrs))
+  }
+  val lvnCfg = dceCfg.copy(basicBlocks = blocksNumbered)
+  println(dceCfg.copy(basicBlocks = blocksNumbered).show)
 }
