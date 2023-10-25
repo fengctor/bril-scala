@@ -57,4 +57,14 @@ object Instruction {
     case Print(args)                     => args
     case _                               => Nil
   }
+
+  def mapArgs(instr: Instruction)(f: String => String): Instruction = instr match {
+    case Binary(dest, op, argLeft, argRight) => Binary(dest, op, f(argLeft), f(argRight))
+    case Unary(dest, op, arg)                => Unary(dest, op, f(arg))
+    case Br(arg, label1, label2)             => Br(f(arg), label1, label2)
+    case Call(optDest, name, args)           => Call(optDest, name, args.map(f))
+    case Ret(optArg)                         => Ret(optArg.map(f))
+    case Print(args)                         => Print(args.map(f))
+    case _                                   => instr
+  }
 }

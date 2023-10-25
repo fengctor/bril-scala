@@ -1,6 +1,7 @@
 package bril.analysis.local
 
 import bril.syntax._
+import bril.analysis.local.extensions.Extension
 import cats.syntax.all._
 
 sealed trait SerializedExpression
@@ -10,7 +11,11 @@ final case class UnExpr(op: UnaryOperation, arg: Int) extends SerializedExpressi
 
 // Table with rows associating
 // (value ID, serialized expression, canonical variable)
-case class Table(exprToId: Map[SerializedExpression, Int], idToCanonVar: Map[Int, String])
+case class Table(
+  idToExpr: Map[Int, SerializedExpression],
+  idToCanonVar: Map[Int, String],
+  exprToId: Map[SerializedExpression, Int]
+)
 
 object ValueNumbering {
   // Used to generate fresh variables
@@ -40,12 +45,10 @@ object ValueNumbering {
     }
 
   def addRow(table: Table, id: Int, serExpr: SerializedExpression, canonVar: String): Table =
-    Table(table.exprToId + (serExpr -> id), table.idToCanonVar + (id -> canonVar))
+    Table(table.idToExpr + (id -> serExpr), table.idToCanonVar + (id -> canonVar), table.exprToId + (serExpr -> id))
 
-  // ext: a function to interpret a serialized expression as another one for other optimizations that need this
-  def runWithExtension(
-    ext: (SerializedExpression, Table) => SerializedExpression
-  )(block: List[Instruction]): List[Instruction] = {
+  // ext: a set of functions to interpret a serialized expression as another one for creating other optimizations
+  def runWithExtension(ext: Extension)(block: List[Instruction]): List[Instruction] = {
     // Returns the set of Instructions that are overwritten later in the block
     def findOverwritten(
       block: List[Instruction],
@@ -84,58 +87,52 @@ object ValueNumbering {
       block: List[Instruction],
       table: Table,
       varToId: Map[String, Int],
-      accRevResult: List[Either[Instruction, (Destination, SerializedExpression)]]
-    ): (List[Either[Instruction, (Destination, SerializedExpression)]], Map[Int, String]) = block match {
-      case Nil => (accRevResult.reverse, table.idToCanonVar)
+      accRevResult: List[Instruction]
+    ): List[Instruction] = block match {
+      case Nil => accRevResult.reverse
       case instr :: instrs =>
         val (initTable, initVarToId) = initArgs(table, varToId, Instruction.args(instr))
-        serialize(instr, initVarToId) match {
-          case None => numberValues(instrs, initTable, initVarToId, Left(instr) :: accRevResult)
+        val (nextTable, nextVarToId, resultInstr) = serialize(instr, initVarToId) match {
+          case None =>
+            // Remap args to their canonical variables
+            val remappedInstr = Instruction.mapArgs(instr)(arg => initTable.idToCanonVar(varToId(arg)))
+            (initTable, initVarToId, remappedInstr)
           case Some((dest, serExpr)) =>
-            val convertedSerExpr = ext(serExpr, table)
-            initTable.exprToId.get(convertedSerExpr) match {
+            val preLookupSerExpr = ext.preLookup(serExpr, table)
+            initTable.exprToId.get(preLookupSerExpr) match {
               case None =>
+                val postLookupSerExpr = ext.postLookup(preLookupSerExpr, table)
                 // If instruction is overwritten later, use a fresh variable as the canonical var
                 // and when then instruction is reconstructed, use it as the destination variable
                 val canonDestName =
                   if (overwritten.contains(instr)) freshVariable()
                   else dest.destName
                 val updatedDest = dest.copy(destName = canonDestName)
-                val updatedTable = addRow(initTable, curId, convertedSerExpr, canonDestName)
+                val updatedTable = addRow(initTable, curId, postLookupSerExpr, canonDestName)
                 // Still use original variable name for environment since usages will only
                 // possibly refer to it, not the possibly fresh name
                 val updatedVarToId = initVarToId + (dest.destName -> curId)
                 curId += 1
-                numberValues(
-                  instrs,
-                  updatedTable,
-                  updatedVarToId,
-                  Right((updatedDest, convertedSerExpr)) :: accRevResult
-                )
+                (updatedTable, updatedVarToId, deserialize(updatedDest, postLookupSerExpr, updatedTable.idToCanonVar))
               case Some(existingId) =>
                 val updatedVarToId = initVarToId + (dest.destName -> existingId)
-                val replacedSerExpr = UnExpr(Id, existingId)
-                numberValues(
-                  instrs,
-                  initTable,
-                  updatedVarToId,
-                  Right((dest, replacedSerExpr)) :: accRevResult
-                )
+                val postLookupSerExpr = ext.postLookup(UnExpr(Id, existingId), table)
+                (initTable, updatedVarToId, deserialize(dest, postLookupSerExpr, initTable.idToCanonVar))
             }
         }
-    }
-
-    def backToInstruction(
-      result: Either[Instruction, (Destination, SerializedExpression)],
-      idToVar: Map[Int, String]
-    ): Instruction = result match {
-      case Left(instr)            => instr
-      case Right((dest, serExpr)) => deserialize(dest, serExpr, idToVar)
+        val convertedInstr = Instruction.mapArgs(resultInstr)(arg => ext.argConversion(arg, table))
+        numberValues(instrs, nextTable, nextVarToId, convertedInstr :: accRevResult)
     }
 
     // Reset IDs for each block
     curId = 0
-    val (resultList, idToVar) = numberValues(block, Table(Map.empty, Map.empty), Map.empty, Nil)
-    resultList.map(backToInstruction(_, idToVar))
+    numberValues(block, Table(Map.empty, Map.empty, Map.empty), Map.empty, Nil)
   }
+
+  // Identity extension
+  val extension: Extension = Extension(
+    (serExpr: SerializedExpression, _: Table) => serExpr,
+    (serExpr: SerializedExpression, _: Table) => serExpr,
+    (arg: String, _: Table) => arg
+  )
 }
