@@ -112,8 +112,31 @@ object Main extends App {
     )
   )
 
+  val togetherProgram = Program(
+    List(
+      Function(
+        "main",
+        List(),
+        None,
+        List(
+          Const(Destination("a", BrilInt), IntLit(4)),
+          Const(Destination("b", BrilInt), IntLit(2)),
+          Unary(Destination("a1", BrilInt), Id, "a"),
+          Unary(Destination("a2", BrilInt), Id, "a1"),
+          Unary(Destination("b1", BrilInt), Id, "b"),
+          Unary(Destination("b2", BrilInt), Id, "b1"),
+          Binary(Destination("sum1", BrilInt), Add, "a1", "b2"),
+          Binary(Destination("sum2", BrilInt), Add, "b1", "a2"),
+          Binary(Destination("prod", BrilInt), Mul, "sum1", "sum2"),
+          Print(List("a")),
+          Binary(Destination("a", BrilInt), Mul, "sum1", "sum2"),
+          Print(List("prod"))
+        )
+      )
+    )
+  )
 
-  val program = cseProgram
+  val program = togetherProgram
   println("Program:")
   println(program.show)
   println()
@@ -137,7 +160,7 @@ object Main extends App {
   testLocalOptimization(
     "local value numbering",
     analysis.local.ValueNumbering.runWithExtension(
-      analysis.local.ValueNumbering.extension
+      analysis.local.extensions.Extension.idExtension
     )
   )
   testLocalOptimization(
@@ -164,4 +187,16 @@ object Main extends App {
       analysis.local.extensions.ConstantFolding.extension
     )
   )
+  testLocalOptimization(
+    "all lvn extensions",
+    analysis.local.ValueNumbering.runWithExtension(
+      analysis.local.extensions.Extension.pipeAll(
+        analysis.local.extensions.CommonSubexpressionElimination.extension,
+        analysis.local.extensions.CopyPropagation.extension,
+        analysis.local.extensions.ConstantPropagation.extension,
+        analysis.local.extensions.ConstantFolding.extension
+      )
+    )
+  )
+
 }

@@ -134,11 +134,4 @@ object ValueNumbering {
     curId = 0
     numberValues(block, Table(Map.empty, Map.empty, Map.empty, Map.empty), Map.empty, Nil)
   }
-
-  // Identity extension
-  val extension: Extension = Extension(
-    (serExpr: SerializedExpression, _: Table) => serExpr,
-    (serExpr: SerializedExpression, _: Table) => serExpr,
-    (arg: String, _: Table) => arg
-  )
 }
