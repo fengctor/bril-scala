@@ -1,0 +1,21 @@
+{
+  "functions" : [
+    {
+      "name" : "main",
+      "instrs" : [
+        { "op" : "const", "dest" : "a", "type" : "int", "value" : 4 },
+        { "op" : "const", "dest" : "b", "type" : "int", "value" : 2 },
+        { "op" : "id", "dest" : "a1", "type" : "int", "args" : [ "a" ] },
+        { "op" : "id", "dest" : "a2", "type" : "int", "args" : [ "a1" ] },
+        { "op" : "id", "dest" : "b1", "type" : "int", "args" : [ "b" ] },
+        { "op" : "id", "dest" : "b2", "type" : "int", "args" : [ "b1" ] },
+        { "op" : "add", "dest" : "sum1", "type" : "int", "args" : [ "a1", "b2" ] },
+        { "op" : "add", "dest" : "sum2", "type" : "int", "args" : [ "b1", "a2" ] },
+        { "op" : "mul", "dest" : "prod", "type" : "int", "args" : [ "sum1", "sum2" ] },
+        { "op" : "print", "args" : [ "a" ] },
+        { "op" : "mul", "dest" : "a", "type" : "int", "args" : [ "sum1", "sum2" ] },
+        { "op" : "print", "args" : [ "prod" ] }
+      ]
+    }
+  ]
+}

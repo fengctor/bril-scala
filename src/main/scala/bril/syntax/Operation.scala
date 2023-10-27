@@ -32,6 +32,21 @@ object BinaryOperation {
       case Or  => "or"
     }
   }
+
+  def fromString(s: String): BinaryOperation = s match {
+    case "add" => Add
+    case "mul" => Mul
+    case "sub" => Sub
+    case "div" => Div
+    case "eq"  => Eq
+    case "lt"  => Lt
+    case "gt"  => Gt
+    case "le"  => Le
+    case "ge"  => Ge
+    case "and" => And
+    case "or"  => Or
+    case _     => throw new Exception(s"Invalid BinaryOperation: $s")
+  }
 }
 
 sealed trait UnaryOperation
@@ -44,5 +59,11 @@ object UnaryOperation {
       case Not => "not"
       case Id  => "id"
     }
+  }
+
+  def fromString(s: String): UnaryOperation = s match {
+    case "not" => Not
+    case "id"  => Id
+    case _     => throw new Exception(s"Invalid UnaryOperation: $s")
   }
 }

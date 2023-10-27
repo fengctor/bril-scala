@@ -2,6 +2,7 @@ package bril.syntax
 
 import cats.Show
 import cats.syntax.all._
+import io.circe.{Decoder, Encoder}
 
 final case class Function(
   name: String,
@@ -34,4 +35,17 @@ object Function {
       s"@${function.name}$argsStr$retTypeStr {\n$instrsStr\n}"
     }
   }
+
+  implicit val encoderInstance: Encoder[Function] =
+    Encoder
+      .forProduct4("name", "args", "type", "instrs") { (f: Function) =>
+        (f.name, if (f.args.isEmpty) None else Some(f.args), f.retType, f.instrs)
+      }
+      .mapJson(_.dropNullValues)
+
+  implicit val decoderInstance: Decoder[Function] =
+    Decoder.forProduct4("name", "args", "type", "instrs") {
+      (name: String, optArgs: Option[List[Destination]], retType: Option[Type], instrs: List[Instruction]) =>
+        Function(name, optArgs.getOrElse(Nil), retType, instrs)
+    }
 }

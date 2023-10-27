@@ -3,142 +3,24 @@ package bril
 import bril.analysis
 import bril.syntax._
 import cats.syntax.all._
+import io.circe.parser.decode
+import io.circe.syntax._
+import java.io.File
+import java.io.PrintWriter
+import scala.io.Source
 
 object Main extends App {
-  val program1 = Program(
-    List(
-      Function(
-        "main",
-        List(Destination("arg", BrilInt)),
-        None,
-        List(
-          Const(Destination("five", BrilInt), IntLit(5)),
-          Const(Destination("ten", BrilInt), IntLit(10)),
-          Binary(Destination("res", BrilInt), Add, "arg", "five"),
-          Binary(Destination("cond", BrilBool), Le, "res", "ten"),
-          Br("cond", "then", "else"),
-          Label("then"),
-          Print(List("res")),
-          Label("else")
-        )
-      )
-    )
-  )
+  if (args.length != 1) sys.exit(1)
 
-  val program2 = Program(
-    List(
-      Function(
-        "main",
-        List(Destination("arg", BrilInt)),
-        None,
-        List(
-          Label("start"),
-          Const(Destination("overwritten", BrilInt), IntLit(0)),
-          Const(Destination("five", BrilInt), IntLit(5)),
-          Unary(Destination("overwritten", BrilInt), Id, "five"),
-          Const(Destination("ten", BrilInt), IntLit(5)),
-          Binary(Destination("ten", BrilInt), Add, "ten", "five"),
-          Unary(Destination("overwritten", BrilInt), Id, "ten"),
-          Binary(Destination("res", BrilInt), Add, "arg", "five"),
-          Binary(Destination("overwritten", BrilInt), Add, "res", "res"),
-          Binary(Destination("cond", BrilBool), Le, "res", "ten"),
-          Binary(Destination("overwritten", BrilInt), Add, "arg", "five"),
-          Br("cond", "then", "else"),
-          Const(Destination("dead", BrilInt), IntLit(0)),
-          Label("then"),
-          Print(List("res")),
-          Ret(Some("five")),
-          Label("else"),
-          Jmp("start")
-        )
-      )
-    )
-  )
+  val filename = args(0)
+  val content: String = Source.fromFile(filename).getLines().mkString("\n")
+  val Right(program) = decode[Program](content)
 
-  val lvnProgram = Program(
-    List(
-      Function(
-        "main",
-        List(),
-        None,
-        List(
-          Const(Destination("a", BrilInt), IntLit(4)),
-          Const(Destination("b", BrilInt), IntLit(2)),
-          Binary(Destination("sum1", BrilInt), Add, "a", "b"),
-          Binary(Destination("sum2", BrilInt), Add, "a", "b"),
-          Binary(Destination("prod", BrilInt), Mul, "sum1", "sum2"),
-          Print(List("a")),
-          Binary(Destination("a", BrilInt), Mul, "sum1", "sum2"),
-          Print(List("prod"))
-        )
-      )
-    )
-  )
-
-  val copyPropProgram = Program(
-    List(
-      Function(
-        "main",
-        List(),
-        None,
-        List(
-          Const(Destination("x", BrilInt), IntLit(4)),
-          Unary(Destination("copy1", BrilInt), Id, "x"),
-          Unary(Destination("copy2", BrilInt), Id, "copy1"),
-          Unary(Destination("copy3", BrilInt), Id, "copy2"),
-          Print(List("copy3"))
-        )
-      )
-    )
-  )
-
-  val cseProgram = Program(
-    List(
-      Function(
-        "main",
-        List(),
-        None,
-        List(
-          Const(Destination("a", BrilInt), IntLit(4)),
-          Const(Destination("b", BrilInt), IntLit(2)),
-          Binary(Destination("sum1", BrilInt), Add, "a", "b"),
-          Binary(Destination("sum2", BrilInt), Add, "b", "a"),
-          Binary(Destination("prod", BrilInt), Mul, "sum1", "sum2"),
-          Print(List("a")),
-          Binary(Destination("a", BrilInt), Mul, "sum1", "sum2"),
-          Print(List("prod"))
-        )
-      )
-    )
-  )
-
-  val togetherProgram = Program(
-    List(
-      Function(
-        "main",
-        List(),
-        None,
-        List(
-          Const(Destination("a", BrilInt), IntLit(4)),
-          Const(Destination("b", BrilInt), IntLit(2)),
-          Unary(Destination("a1", BrilInt), Id, "a"),
-          Unary(Destination("a2", BrilInt), Id, "a1"),
-          Unary(Destination("b1", BrilInt), Id, "b"),
-          Unary(Destination("b2", BrilInt), Id, "b1"),
-          Binary(Destination("sum1", BrilInt), Add, "a1", "b2"),
-          Binary(Destination("sum2", BrilInt), Add, "b1", "a2"),
-          Binary(Destination("prod", BrilInt), Mul, "sum1", "sum2"),
-          Print(List("a")),
-          Binary(Destination("a", BrilInt), Mul, "sum1", "sum2"),
-          Print(List("prod"))
-        )
-      )
-    )
-  )
-
-  val program = togetherProgram
   println("Program:")
   println(program.show)
+  println()
+  println("JSON:")
+  println(program.asJson)
   println()
   println("CFG:")
   val cfg = analysis.Cfg.fromInstructions("main", program.functions(0).instrs)
@@ -198,5 +80,4 @@ object Main extends App {
       )
     )
   )
-
 }

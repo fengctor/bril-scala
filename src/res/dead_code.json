@@ -1,0 +1,27 @@
+{
+  "functions" : [
+    {
+      "name" : "main", "args" : [ { "name" : "arg", "type" : "int" } ],
+      "instrs" : [
+        { "label" : "start" },
+        { "op" : "const", "dest" : "overwritten", "type" : "int", "value" : 0 },
+        { "op" : "const", "dest" : "five", "type" : "int", "value" : 5 },
+        { "op" : "id", "dest" : "overwritten", "type" : "int", "args" : [ "five" ] },
+        { "op" : "const", "dest" : "ten", "type" : "int", "value" : 5 },
+        { "op" : "add", "dest" : "ten", "type" : "int", "args" : [ "ten", "five" ] },
+        { "op" : "id", "dest" : "overwritten", "type" : "int", "args" : [ "ten" ] },
+        { "op" : "add", "dest" : "res", "type" : "int", "args" : [ "arg", "five" ] },
+        { "op" : "add", "dest" : "overwritten", "type" : "int", "args" : [ "res", "res" ] },
+        { "op" : "le", "dest" : "cond", "type" : "bool", "args" : [ "res", "ten" ] },
+        { "op" : "add", "dest" : "overwritten", "type" : "int", "args" : [ "arg", "five" ] },
+        { "op" : "br", "args" : [ "cond" ], "labels" : [ "then", "else" ] },
+        { "op" : "const", "dest" : "dead", "type" : "int", "value" : 0 },
+        { "label" : "then" },
+        { "op" : "print", "args" : [ "res" ] },
+        { "op" : "ret", "args" : [ "five" ] },
+        { "label" : "else" },
+        { "op" : "jmp", "labels" : [ "start" ] }
+      ]
+    }
+  ]
+}

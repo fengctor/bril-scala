@@ -7,10 +7,11 @@ import bril.syntax._
 object CommonSubexpressionElimination {
   def preLookup(serExpr: SerializedExpression, table: Table): SerializedExpression = serExpr match {
     // Canonicalize arg order for commutative binary expressions
-    case BinExpr(op, arg1, arg2) => op match {
-      case Add | Mul => BinExpr(op, arg1 min arg2, arg1 max arg2)
-      case _ => serExpr
-    }
+    case BinExpr(op, arg1, arg2) =>
+      op match {
+        case Add | Mul => BinExpr(op, arg1 min arg2, arg1 max arg2)
+        case _         => serExpr
+      }
     case _ => serExpr
   }
 
