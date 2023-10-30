@@ -12,7 +12,7 @@ object Cfg {
     override def show(cfg: Cfg): String = {
       val blocksStr = cfg.basicBlocks.toList
         .map { case (blockName, blockInstrs) =>
-          s"Block $blockName:\n${blockInstrs.map(instr => s"  ${instr.show}").mkString("\n")}"
+          s"$blockName:\n${blockInstrs.map(instr => s"  ${instr.show}").mkString("\n")}"
         }
         .mkString("\n\n")
       val edgesStr = cfg.edges.toList

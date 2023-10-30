@@ -5,7 +5,6 @@ import cats.syntax.all._
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.auto._
 import io.circe.syntax._
-import scala.util.Try
 
 sealed trait Literal
 final case class IntLit(value: Int) extends Literal

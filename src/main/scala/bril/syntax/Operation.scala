@@ -2,6 +2,10 @@ package bril.syntax
 
 import cats.Show
 import cats.syntax.all._
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.auto._
+import io.circe.syntax._
+import scala.util.Try
 
 sealed trait BinaryOperation
 final case object Add extends BinaryOperation
@@ -47,6 +51,10 @@ object BinaryOperation {
     case "or"  => Or
     case _     => throw new Exception(s"Invalid BinaryOperation: $s")
   }
+
+  implicit val encodeInstance: Encoder[BinaryOperation] = Encoder.instance[BinaryOperation](_.show.asJson)
+
+  implicit val decoderInstance: Decoder[BinaryOperation] = Decoder.decodeString.emapTry(s => Try(fromString(s)))
 }
 
 sealed trait UnaryOperation
@@ -66,4 +74,9 @@ object UnaryOperation {
     case "id"  => Id
     case _     => throw new Exception(s"Invalid UnaryOperation: $s")
   }
+
+  implicit val encodeInstance: Encoder[UnaryOperation] = Encoder.instance[UnaryOperation](_.show.asJson)
+
+  implicit val decoderInstance: Decoder[UnaryOperation] = Decoder.decodeString.emapTry(s => Try(fromString(s)))
+
 }

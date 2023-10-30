@@ -26,12 +26,18 @@ object Main extends App {
   val cfg = analysis.Cfg.fromInstructions("main", program.functions(0).instrs)
   println(cfg.show)
   println()
+  println("Result from running:")
+  Interpreter.run("main", Nil, Map("main" -> (Nil, cfg)))
+  println()
 
   def testLocalOptimization(name: String, optimization: List[Instruction] => List[Instruction]): Unit = {
     println(s"After $name:")
     var resultBlocks = cfg.basicBlocks.map { case (blockName, instrs) => (blockName, optimization(instrs)) }
     val resultCfg = cfg.copy(basicBlocks = resultBlocks)
     println(resultCfg.show)
+    println()
+    println("Result from running:")
+    Interpreter.run("main", Nil, Map("main" -> (Nil, resultCfg)))
     println()
   }
 

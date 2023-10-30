@@ -43,7 +43,7 @@ object Instruction {
     }
   }
 
-  implicit val encodeInstance: Encoder[Instruction] = Encoder
+  implicit val encoderInstance: Encoder[Instruction] = Encoder
     .instance[Instruction] {
       case Label(label) => Json.obj("label" -> label.asJson)
       case Const(Destination(destName, destType), value) =>
@@ -55,16 +55,14 @@ object Instruction {
         )
       case Binary(Destination(destName, destType), op, arg1, arg2) =>
         Json.obj(
-          // TODO: write encode/decode instances for BinaryOperations instead?
-          "op" -> op.show.asJson,
+          "op" -> op.asJson,
           "dest" -> destName.asJson,
           "type" -> destType.asJson,
           "args" -> List(arg1, arg2).asJson
         )
       case Unary(Destination(destName, destType), op, arg) =>
         Json.obj(
-          // TODO: write encode/decode instances for UnaryOperations instead?
-          "op" -> op.show.asJson,
+          "op" -> op.asJson,
           "dest" -> destName.asJson,
           "type" -> destType.asJson,
           "args" -> List(arg).asJson
@@ -160,7 +158,6 @@ object Instruction {
     args <- c.downField("args").as[List[String]]
   } yield Call(optDest, name, args)
   def decodeRet(c: HCursor): Decoder.Result[Instruction] = for {
-    // TODO: match on single arg
     optArg <- c.downField("args").as[Option[List[String]]].flatMap {
       case None          => Right(None)
       case Some(List(v)) => Right(Some(v))
