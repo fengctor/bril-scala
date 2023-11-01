@@ -83,7 +83,7 @@ object ValueNumbering {
           val argId = curId
           curId += 1
           val dummyExpr = UnExpr(Id, argId)
-          (addRow(accTable, argId, dummyExpr, curArg), varToId + (curArg -> argId))
+          (addRow(accTable, argId, dummyExpr, curArg), accVarToId + (curArg -> argId))
         }
       }
 
