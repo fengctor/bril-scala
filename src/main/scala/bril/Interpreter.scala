@@ -95,7 +95,14 @@ object Interpreter {
   // Returns the final state and the next step after evaluating the basic block
   def evalBasicBlock(state: State, instrs: List[Instruction]): (State, Option[BlockResult]) = instrs match {
     case Nil         => throw new Exception("Invalid empty block") // shouldn't happen
-    case List(instr) => evalInstruction(state, instr)
+    case List(instr) => evalInstruction(state, instr) match {
+      case (nextState, None) => nextState.cfg.edges.get(nextState.blockName) match {
+        case None => (nextState, Some(Finish(None)))
+        case Some(List(nextBlockName)) => (nextState.copy(blockName = nextBlockName), Some(NextBlock(nextBlockName)))
+        case _ => throw new Exception(s"Block ${nextState.blockName} should have at most 1 successor")
+      }
+      case next => next
+    }
     case i :: is =>
       val (updatedState, _) = evalInstruction(state, i)
       evalBasicBlock(updatedState, is)
