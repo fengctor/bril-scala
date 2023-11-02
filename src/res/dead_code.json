@@ -3,7 +3,6 @@
     {
       "name" : "main", "args" : [ { "name" : "arg", "type" : "int" } ],
       "instrs" : [
-        { "label" : "start" },
         { "op" : "const", "dest" : "overwritten", "type" : "int", "value" : 0 },
         { "op" : "const", "dest" : "five", "type" : "int", "value" : 5 },
         { "op" : "id", "dest" : "overwritten", "type" : "int", "args" : [ "five" ] },
@@ -12,6 +11,8 @@
         { "op" : "id", "dest" : "overwritten", "type" : "int", "args" : [ "ten" ] },
         { "op" : "add", "dest" : "res", "type" : "int", "args" : [ "arg", "five" ] },
         { "op" : "add", "dest" : "overwritten", "type" : "int", "args" : [ "res", "res" ] },
+        { "label" : "start" },
+        { "op" : "print", "args" : [ "res" ] },
         { "op" : "le", "dest" : "cond", "type" : "bool", "args" : [ "res", "ten" ] },
         { "op" : "add", "dest" : "overwritten", "type" : "int", "args" : [ "arg", "five" ] },
         { "op" : "br", "args" : [ "cond" ], "labels" : [ "then", "else" ] },
@@ -20,6 +21,8 @@
         { "op" : "print", "args" : [ "res" ] },
         { "op" : "ret", "args" : [ "five" ] },
         { "label" : "else" },
+        { "op" : "print", "args" : [ "res" ] },
+        { "op" : "sub", "dest" : "res", "type" : "int", "args" : [ "res", "five" ] },
         { "op" : "jmp", "labels" : [ "start" ] }
       ]
     }

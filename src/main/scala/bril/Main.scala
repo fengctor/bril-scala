@@ -1,7 +1,9 @@
 package bril
 
 import bril.analysis
+import bril.analysis.Cfg
 import bril.syntax._
+import cats.Show
 import cats.syntax.all._
 import io.circe.parser.decode
 import io.circe.syntax._
@@ -10,11 +12,13 @@ import java.io.PrintWriter
 import scala.io.Source
 
 object Main extends App {
-  if (args.length != 1) sys.exit(1)
+  if (args.length < 1) sys.exit(1)
 
-  val filename = args(0)
+  val filename :: progArgStrs = args.toList
+  val progArgValues = progArgStrs.map(s => IntLit(s.toInt))
   val content: String = Source.fromFile(filename).getLines().mkString("\n")
   val Right(program) = decode[Program](content)
+  val progArgNames = program.functions(0).args
 
   println("Program:")
   println(program.show)
@@ -23,11 +27,11 @@ object Main extends App {
   println(program.asJson)
   println()
   println("CFG:")
-  val cfg = analysis.Cfg.fromInstructions("main", program.functions(0).instrs)
+  val cfg = Cfg.fromInstructions("main", program.functions(0).instrs)
   println(cfg.show)
   println()
   println("Result from running:")
-  Interpreter.run("main", Nil, Map("main" -> (Nil, cfg)))
+  Interpreter.run("main", progArgValues, Map("main" -> (progArgNames, cfg)))
   println()
 
   def testLocalOptimization(name: String, optimization: List[Instruction] => List[Instruction]): Unit = {
@@ -37,8 +41,13 @@ object Main extends App {
     println(resultCfg.show)
     println()
     println("Result from running:")
-    Interpreter.run("main", Nil, Map("main" -> (Nil, resultCfg)))
+    Interpreter.run("main", progArgValues, Map("main" -> (progArgNames, resultCfg)))
     println()
+  }
+
+  def testGlobalAnalysis[T : Show](name: String, analyze: Cfg => analysis.global.Dataflow.Results[T]): Unit = {
+    println(s"Results for $name:")
+    println(analyze(cfg).show)
   }
 
   testLocalOptimization(
@@ -84,6 +93,15 @@ object Main extends App {
         analysis.local.extensions.ConstantPropagation.extension,
         analysis.local.extensions.ConstantFolding.extension
       )
+    )
+  )
+
+  testGlobalAnalysis(
+    "reaching definitions",
+    analysis.global.Dataflow.run(
+      analysis.global.ReachingDefinitions.init(program.functions(0)),
+      analysis.global.ReachingDefinitions.merge,
+      analysis.global.ReachingDefinitions.transfer
     )
   )
 }

@@ -1,0 +1,20 @@
+{
+  "functions" : [
+    {
+      "name" : "main",
+      "instrs" : [
+        { "op" : "const", "dest" : "a", "type" : "int", "value" : 1 },
+        { "op" : "const", "dest" : "b", "type" : "int", "value" : 2 },
+        { "op" : "le", "dest" : "cond", "type" : "bool", "args" : [ "a", "b" ] },
+        { "op" : "br", "args" : [ "cond" ], "labels" : [ "then", "else" ] },
+        { "label" : "then" },
+        { "op" : "add", "dest" : "a", "type" : "int", "args" : [ "a", "b" ] },
+        { "op" : "jmp", "labels" : [ "end" ] },
+        { "label" : "else" },
+        { "op" : "add", "dest" : "b", "type" : "int", "args" : [ "a", "b" ] },
+        { "label" : "end" },
+        { "op" : "nop" }
+      ]
+    }
+  ]
+}

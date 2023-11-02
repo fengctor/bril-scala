@@ -65,4 +65,20 @@ object Cfg {
     }
     go(instrs, numberedBlockName(0), Nil, Nil, Nil)
   }
+
+  def successors(cfg: Cfg): Map[String, List[String]] = {
+    val defaults = cfg.basicBlocks.keys.map(_ -> Nil).toMap
+    defaults ++ cfg.edges
+  }
+  def predecessors(cfg: Cfg): Map[String, List[String]] = {
+    val defaults = cfg.basicBlocks.keys.map(_ -> Nil).toMap
+    defaults ++ cfg.edges.toList
+      // reverse edges
+      .flatMap { case (from, tos) => tos.map(to => (to, from)) }
+      // rebuild adjacency lists
+      .foldLeft(Map.empty[String, List[String]]) { (acc, cur) =>
+        val (from, to) = cur
+        acc.updated(from, to :: acc.getOrElse(from, Nil))
+      }
+  }
 }
