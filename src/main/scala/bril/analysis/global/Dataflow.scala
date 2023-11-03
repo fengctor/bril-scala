@@ -7,6 +7,10 @@ import cats.syntax.all._
 import scala.collection.immutable.Queue
 
 object Dataflow {
+  sealed trait Direction
+  final case object Forwards extends Direction
+  final case object Backwards extends Direction
+
   case class Results[T](in: Map[String, T], out: Map[String, T])
   object Results {
     implicit def showInstance[T](implicit showT: Show[T]): Show[Results[T]] = new Show[Results[T]] {
@@ -26,12 +30,23 @@ object Dataflow {
   }
 
   // TODO: should transfer take the old "out" for the current block and determine whether it changed for efficiency?
-  def run[T](init: T, merge: List[T] => T, transfer: (List[Instruction], T) => T)(cfg: Cfg): Results[T] = {
-    val preds = Cfg.predecessors(cfg)
-    val succs = Cfg.successors(cfg)
+  def run[T](direction: Direction, init: T, merge: List[T] => T, transfer: (List[Instruction], T) => T)(
+    cfg: Cfg
+  ): Results[T] = {
+    val (preds, succs) = {
+      val originalPreds = Cfg.predecessors(cfg)
+      val originalSuccs = Cfg.successors(cfg)
+      direction match {
+        case Forwards  => (originalPreds, originalSuccs)
+        case Backwards => (originalSuccs, originalPreds)
+      }
+    }
 
     def go(in: Map[String, T], out: Map[String, T], worklist: Queue[String]): Results[T] =
-      if (worklist.isEmpty) Results(in, out)
+      if (worklist.isEmpty) direction match {
+        case Forwards  => Results(in, out)
+        case Backwards => Results(out, in)
+      }
       else {
         val (curBlockName, restWorklist) = worklist.dequeue
         val curBlock = cfg.basicBlocks(curBlockName)

@@ -45,7 +45,7 @@ object Main extends App {
     println()
   }
 
-  def testGlobalAnalysis[T : Show](name: String, analyze: Cfg => analysis.global.Dataflow.Results[T]): Unit = {
+  def testGlobalAnalysis[T: Show](name: String, analyze: Cfg => analysis.global.Dataflow.Results[T]): Unit = {
     println(s"Results for $name:")
     println(analyze(cfg).show)
   }
@@ -99,9 +99,21 @@ object Main extends App {
   testGlobalAnalysis(
     "reaching definitions",
     analysis.global.Dataflow.run(
+      analysis.global.Dataflow.Forwards,
       analysis.global.ReachingDefinitions.init(program.functions(0)),
       analysis.global.ReachingDefinitions.merge,
       analysis.global.ReachingDefinitions.transfer
     )
   )
+
+  testGlobalAnalysis(
+    "live variables",
+    analysis.global.Dataflow.run(
+      analysis.global.Dataflow.Backwards,
+      analysis.global.LiveVariables.init,
+      analysis.global.LiveVariables.merge,
+      analysis.global.LiveVariables.transfer
+    )
+  )
+
 }
