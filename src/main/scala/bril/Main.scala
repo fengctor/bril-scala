@@ -36,12 +36,27 @@ object Main extends App {
 
   def testLocalOptimization(name: String, optimization: List[Instruction] => List[Instruction]): Unit = {
     println(s"After $name:")
-    var resultBlocks = cfg.basicBlocks.map { case (blockName, instrs) => (blockName, optimization(instrs)) }
+    val resultBlocks = cfg.basicBlocks.map { case (blockName, instrs) => (blockName, optimization(instrs)) }
+    // Do dead code elimination
     val resultCfg = cfg.copy(basicBlocks = resultBlocks)
-    println(resultCfg.show)
+    val liveVariableResults = analysis.global.Dataflow.run(
+      analysis.global.Dataflow.Backwards,
+      analysis.global.LiveVariables.init,
+      analysis.global.LiveVariables.merge,
+      analysis.global.LiveVariables.transfer
+    )(resultCfg)
+    val dceBlocks = resultBlocks.map { case (blockName, instrs) =>
+      (
+        blockName,
+        analysis.global.DeadCodeElimination.localWithLiveVariables(liveVariableResults.out(blockName), instrs)
+      )
+    }
+    val finalCfg = cfg.copy(basicBlocks = dceBlocks)
+
+    println(finalCfg.show)
     println()
     println("Result from running:")
-    Interpreter.run("main", progArgValues, Map("main" -> (progArgNames, resultCfg)))
+    Interpreter.run("main", progArgValues, Map("main" -> (progArgNames, finalCfg)))
     println()
   }
 
@@ -98,22 +113,17 @@ object Main extends App {
 
   testGlobalAnalysis(
     "reaching definitions",
-    analysis.global.Dataflow.run(
-      analysis.global.Dataflow.Forwards,
-      analysis.global.ReachingDefinitions.init(program.functions(0)),
-      analysis.global.ReachingDefinitions.merge,
-      analysis.global.ReachingDefinitions.transfer
-    )
+    analysis.global.ReachingDefinitions.run(program.functions(0))
   )
 
   testGlobalAnalysis(
     "live variables",
-    analysis.global.Dataflow.run(
-      analysis.global.Dataflow.Backwards,
-      analysis.global.LiveVariables.init,
-      analysis.global.LiveVariables.merge,
-      analysis.global.LiveVariables.transfer
-    )
+    analysis.global.LiveVariables.run
+  )
+
+  testGlobalAnalysis(
+    "constant propagation",
+    analysis.global.ConstantPropagation.run(program.functions(0))
   )
 
 }

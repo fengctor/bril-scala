@@ -1,6 +1,7 @@
 package bril.analysis.global
 
 import bril.syntax._
+import bril.analysis.Cfg
 
 object LiveVariables {
   val init: Set[String] = Set.empty
@@ -20,4 +21,7 @@ object LiveVariables {
     }
     used ++ (curOut -- killed)
   }
+
+  def run(cfg: Cfg): Dataflow.Results[Set[String]] =
+    Dataflow.run(Dataflow.Backwards, init, merge, transfer)(cfg)
 }

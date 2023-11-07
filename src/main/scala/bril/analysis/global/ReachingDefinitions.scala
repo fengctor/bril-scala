@@ -1,6 +1,8 @@
 package bril.analysis.global
 
 import bril.syntax._
+import bril.analysis.Cfg
+import bril.analysis.global.Dataflow
 
 object ReachingDefinitions {
   // Union of two Maps from variable names to their sets of definitions, taking the union of values on conflicting names
@@ -32,4 +34,7 @@ object ReachingDefinitions {
     // implicitly handles removing the KILLS set
     curIn ++ defs.map { case (k, v) => k -> Set(v) }
   }
+
+  def run(f: Function)(cfg: Cfg): Dataflow.Results[Map[String, Set[Instruction]]] =
+    Dataflow.run(Dataflow.Forwards, init(f), merge, transfer)(cfg)
 }
